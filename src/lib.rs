@@ -37,11 +37,11 @@ pub mod models;
 pub mod utils;
 
 // Re-export main types for convenience
+pub use auth::create_developer_token;
 pub use client::AppleMusicClient;
 pub use config::ClientConfig;
 pub use error::AppleMusicError;
 pub use models::*;
-
 // Re-export common types
 pub use reqwest;
 pub use serde_json;
