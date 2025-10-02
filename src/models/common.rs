@@ -179,6 +179,16 @@ pub struct Relationship<T> {
     pub next: Option<String>,
 }
 
+impl<T> Default for Relationship<T> {
+    fn default() -> Self {
+        Relationship {
+            data: Vec::new(),
+            href: None,
+            next: None,
+        }
+    }
+}
+
 /// Pagination information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PaginationMeta {

@@ -472,6 +472,15 @@ pub struct PlaylistRelationships {
     pub tracks: Option<Relationship<Song>>,
 }
 
+impl Default for PlaylistRelationships {
+    fn default() -> Self {
+        PlaylistRelationships {
+            curator: None,
+            tracks: None,
+        }
+    }
+}
+
 /// Curator resource
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Curator {
