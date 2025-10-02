@@ -429,7 +429,7 @@ pub struct Playlist {
 pub struct PlaylistAttributes {
     /// The curator name
     #[serde(rename = "curatorName")]
-    pub curator_name: String,
+    pub curator_name: Option<String>,
 
     /// The description
     #[serde(rename = "description")]
