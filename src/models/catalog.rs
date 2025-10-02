@@ -445,7 +445,7 @@ pub struct PlaylistAttributes {
 
     /// The playlist type
     #[serde(rename = "playlistType")]
-    pub playlist_type: String,
+    pub playlist_type: Option<String>,
 
     /// The URL
     #[serde(rename = "url")]
