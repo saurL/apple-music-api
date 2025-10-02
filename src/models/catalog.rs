@@ -106,6 +106,10 @@ pub struct SongAttributes {
     /// The work name
     #[serde(rename = "workName")]
     pub work_name: Option<String>,
+
+    /// Whether the song can be edited
+    #[serde(rename = "canEdit")]
+    pub can_edit: Option<bool>,
 }
 
 /// Song relationships
@@ -449,7 +453,7 @@ pub struct PlaylistAttributes {
 
     /// The URL
     #[serde(rename = "url")]
-    pub url: String,
+    pub url: Option<String>,
 
     /// The artwork
     #[serde(rename = "artwork")]
@@ -458,6 +462,14 @@ pub struct PlaylistAttributes {
     /// The play parameters
     #[serde(rename = "playParams")]
     pub play_params: Option<PlayParameters>,
+
+    /// Whether the playlist is public
+    #[serde(rename = "isPublic")]
+    pub is_public: Option<bool>,
+
+    /// Whether the playlist has a catalog
+    #[serde(rename = "hasCatalog")]
+    pub has_catalog: Option<bool>,
 }
 
 /// Playlist relationships
