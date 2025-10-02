@@ -217,6 +217,23 @@ impl AppleMusicClient {
             })
     }
 
+    /// Get a playlist by ID
+    pub async fn get_private_playlist(&self, id: &str) -> Result<Playlist> {
+        crate::utils::validate_resource_id(id)?;
+
+        let path = format!("v1/me/library/playlists/{}", id);
+        let response: ApiResponse<Playlist> = self.http_client.get_json(&path).await?;
+
+        response
+            .data
+            .into_iter()
+            .next()
+            .ok_or_else(|| AppleMusicError::Api {
+                status: 404,
+                message: "Playlist not found".to_string(),
+            })
+    }
+
     /// Get a playlist by ID with its tracks included
     pub async fn get_playlist_with_tracks(&self, id: &str) -> Result<Playlist> {
         crate::utils::validate_resource_id(id)?;
