@@ -217,6 +217,33 @@ impl AppleMusicClient {
             })
     }
 
+    /// Get a playlist by ID with its tracks included
+    pub async fn get_playlist_with_tracks(&self, id: &str) -> Result<Playlist> {
+        crate::utils::validate_resource_id(id)?;
+
+        let path = format!("v1/catalog/{}/playlists/{}", self.config.storefront, id);
+        let params = vec![("include", "tracks".to_string())];
+        let params: Vec<(String, String)> = params
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect();
+        let response: ApiResponse<Playlist> = self
+            .http_client
+            .request(&path)
+            .query_params(params)
+            .get_json()
+            .await?;
+
+        response
+            .data
+            .into_iter()
+            .next()
+            .ok_or_else(|| AppleMusicError::Api {
+                status: 404,
+                message: "Playlist not found".to_string(),
+            })
+    }
+
     /// Get multiple albums by IDs
     pub async fn get_albums(&self, ids: &[&str]) -> Result<Vec<Album>> {
         if ids.is_empty() {

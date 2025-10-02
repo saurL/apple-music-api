@@ -469,7 +469,7 @@ pub struct PlaylistRelationships {
 
     /// The tracks relationship
     #[serde(rename = "tracks")]
-    pub tracks: Option<Relationship<serde_json::Value>>,
+    pub tracks: Option<Relationship<Song>>,
 }
 
 /// Curator resource
