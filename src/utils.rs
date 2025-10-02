@@ -63,10 +63,10 @@ pub fn validate_resource_id(id: &str) -> Result<()> {
     // Check for invalid characters
     if id
         .chars()
-        .any(|c| !c.is_alphanumeric() && c != '-' && c != '_')
+        .any(|c| !c.is_alphanumeric() && c != '-' && c != '_' && c != '.')
     {
         return Err(AppleMusicError::invalid_request(
-            "Resource ID contains invalid characters. Only alphanumeric characters, hyphens, and underscores are allowed"
+            "Resource ID contains invalid characters. Only alphanumeric characters, hyphens, underscores, and periods are allowed"
         ));
     }
 
