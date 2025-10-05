@@ -297,16 +297,22 @@ impl<'a> RequestBuilder<'a> {
     pub async fn get_json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
         let response = self.get().await?;
         let text = response.text().await.map_err(AppleMusicError::Http)?;
-        println!("RAW RESPONSE: {}", text);
+
+        eprintln!("HTTP Status: {}", status);
+        eprintln!("Headers: {:?}", headers);
+        eprintln!("RAW RESPONSE length: {}", text.len());
+
         match serde_json::from_str::<T>(&text) {
             Ok(val) => Ok(val),
             Err(e) => {
                 eprintln!("Serde JSON error: {}", e);
-                eprintln!("Failed while parsing response of length {}", text.len());
-                eprintln!("Error type: {:?}", e.classify());
-                // tu peux aussi dumper un extrait du début
-                let preview = &text[..text.len().min(500)];
-                eprintln!("Response preview (first 500 chars): {}", preview);
+                eprintln!("Response length: {}", text.len());
+
+                // Dump un bout pour voir si c’est tronqué
+                let start = &text[..text.len().min(500)];
+                let end = &text[text.len().saturating_sub(500)..];
+                eprintln!("Response START (first 500): {}", start);
+                eprintln!("Response END (last 500): {}", end);
 
                 Err(AppleMusicError::Serialization(e))
             }
