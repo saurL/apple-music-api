@@ -123,9 +123,7 @@ impl AppleMusicClient {
     /// ```
     pub async fn search_songs(&self, name: &str) -> Result<Vec<Song>> {
         let response = self.search(name, &[MediaType::Songs]).await?;
-        Ok(response.results.songs
-            .map(|s| s.data)
-            .unwrap_or_default())
+        Ok(response.results.songs.map(|s| s.data).unwrap_or_default())
     }
 
     /// Search the Apple Music catalog
@@ -261,7 +259,8 @@ impl AppleMusicClient {
             .into_iter()
             .map(|(k, v)| (k.to_string(), v))
             .collect();
-
+        println!("Path: {}", path);
+        println!("Params: {:?}", params);
         let response: ApiResponse<LibraryPlaylist> = self
             .http_client
             .request(&path)
