@@ -296,10 +296,10 @@ impl<'a> RequestBuilder<'a> {
     /// Execute GET request and parse JSON response
     pub async fn get_json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
         let response = self.get().await?;
+        eprintln!("HTTP Status: {}", response.status());
+        eprintln!("Headers: {:?}", response.headers());
         let text = response.text().await.map_err(AppleMusicError::Http)?;
 
-        eprintln!("HTTP Status: {}", status);
-        eprintln!("Headers: {:?}", headers);
         eprintln!("RAW RESPONSE length: {}", text.len());
 
         match serde_json::from_str::<T>(&text) {
