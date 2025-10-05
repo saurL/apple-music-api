@@ -136,7 +136,8 @@ impl HttpClient {
     /// Get the response as JSON
     pub async fn get_json<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
         let response = self.get(path).await?;
-        response.json().await.map_err(AppleMusicError::Http)
+        let text = response.text().await.map_err(AppleMusicError::Http)?;
+        serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
     }
 
     /// Post JSON and get JSON response
@@ -146,7 +147,8 @@ impl HttpClient {
         body: &T,
     ) -> Result<U> {
         let response = self.post(path, body).await?;
-        response.json().await.map_err(AppleMusicError::Http)
+        let text = response.text().await.map_err(AppleMusicError::Http)?;
+        serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
     }
 
     /// Post JSON without expecting a response body
@@ -199,7 +201,8 @@ impl HttpClient {
         body: &T,
     ) -> Result<U> {
         let response = self.put(path, body).await?;
-        response.json().await.map_err(AppleMusicError::Http)
+        let text = response.text().await.map_err(AppleMusicError::Http)?;
+        serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
     }
 
     /// Update the user token
@@ -293,7 +296,8 @@ impl<'a> RequestBuilder<'a> {
     /// Execute GET request and parse JSON response
     pub async fn get_json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
         let response = self.get().await?;
-        response.json().await.map_err(AppleMusicError::Http)
+        let text = response.text().await.map_err(AppleMusicError::Http)?;
+        serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
     }
 }
 
