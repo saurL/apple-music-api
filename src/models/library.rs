@@ -288,6 +288,12 @@ pub struct LibraryPlaylistRelationships {
     pub tracks: Option<Relationship<LibrarySong>>,
 }
 
+impl Default for LibraryPlaylistRelationships {
+    fn default() -> Self {
+        Self { tracks: None }
+    }
+}
+
 /// Library music video resource
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LibraryMusicVideo {
