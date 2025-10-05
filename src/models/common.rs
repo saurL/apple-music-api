@@ -239,6 +239,10 @@ pub struct ApiResponse<T> {
     /// The next URL for pagination
     #[serde(rename = "next")]
     pub next: Option<String>,
+
+    /// Included resources (for relationships with include parameter)
+    #[serde(rename = "included", skip_serializing_if = "Option::is_none")]
+    pub included: Option<Vec<serde_json::Value>>,
 }
 
 /// Storefront information

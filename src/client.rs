@@ -1,7 +1,6 @@
 //! Main Apple Music API client
 
 use crate::{
-    auth::{AuthBuilder, AuthConfig},
     config::{ClientConfig, MediaType, SearchOptions},
     error::{AppleMusicError, Result},
     http::HttpClient,
@@ -9,26 +8,53 @@ use crate::{
     utils::SearchParamsBuilder,
 };
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 /// Main Apple Music API client
+///
+/// The client handles all interactions with the Apple Music API, including catalog search,
+/// library management, and personalized user requests.
+///
+/// # Examples
+///
+/// Basic usage with developer token:
+///
+/// ```rust,no_run
+/// use apple_music_api::{AppleMusicClient, ClientConfig, create_developer_token};
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let team_id = "YOUR_TEAM_ID";
+/// let key_id = "YOUR_KEY_ID";
+/// let private_key = include_str!("../certs/AuthKey.p8");
+///
+/// let developer_token = create_developer_token(team_id, key_id, private_key)?;
+///
+/// let config = ClientConfig::builder()
+///     .developer_token(developer_token)
+///     .build()?;
+///
+/// let client = AppleMusicClient::new(config).await?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Clone)]
 pub struct AppleMusicClient {
     http_client: Arc<HttpClient>,
-    auth: Arc<Mutex<AuthBuilder>>,
     config: ClientConfig,
 }
 
 impl AppleMusicClient {
     /// Create a new Apple Music client with the given configuration
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Client configuration including developer token and optional user token
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the configuration is invalid
     pub async fn new(config: ClientConfig) -> Result<Self> {
         config.validate()?;
 
-        // For now, we'll use simple auth with the developer token directly
-        // In a real implementation, you'd want to set up proper JWT auth
-        let auth =
-            AuthBuilder::Simple(crate::auth::SimpleAuth::new(config.developer_token.clone()));
-
         let mut http_client = HttpClient::new(&config)?;
         if let Some(user_token) = &config.user_token {
             http_client.set_user_token(Some(user_token.clone()));
@@ -36,63 +62,18 @@ impl AppleMusicClient {
 
         Ok(Self {
             http_client: Arc::new(http_client),
-            auth: Arc::new(Mutex::new(auth)),
-            config,
-        })
-    }
-
-    /// Create a client with JWT authentication
-    pub async fn with_jwt_auth(
-        config: ClientConfig,
-        team_id: String,
-        key_id: String,
-        private_key: String,
-    ) -> Result<Self> {
-        config.validate()?;
-
-        let auth_config = AuthConfig::jwt(team_id, key_id, private_key);
-        let auth = auth_config.build()?;
-
-        let mut http_client = HttpClient::new(&config)?;
-        if let Some(user_token) = &config.user_token {
-            http_client.set_user_token(Some(user_token.clone()));
-        }
-
-        Ok(Self {
-            http_client: Arc::new(http_client),
-            auth: Arc::new(Mutex::new(auth)),
-            config,
-        })
-    }
-
-    /// Create a client with JWT authentication from private key file
-    pub async fn with_jwt_from_file(
-        team_id: String,
-        key_id: String,
-        private_key_path: String,
-    ) -> Result<Self> {
-        let config = ClientConfig::new(team_id, key_id, private_key_path)?;
-        config.validate()?;
-
-        // For file-based auth, we use simple auth since we already generated the token
-        let auth =
-            AuthBuilder::Simple(crate::auth::SimpleAuth::new(config.developer_token.clone()));
-
-        let mut http_client = HttpClient::new(&config)?;
-        if let Some(user_token) = &config.user_token {
-            http_client.set_user_token(Some(user_token.clone()));
-        }
-
-        Ok(Self {
-            http_client: Arc::new(http_client),
-            auth: Arc::new(Mutex::new(auth)),
             config,
         })
     }
 
     /// Set the user token for personalized requests
+    ///
+    /// The user token should be obtained from MusicKit JS on the client side.
+    ///
+    /// # Arguments
+    ///
+    /// * `user_token` - Optional user token from MusicKit
     pub async fn set_user_token(&mut self, user_token: Option<String>) -> Result<()> {
-        self.auth.lock().await.set_user_token(user_token.clone());
         Arc::get_mut(&mut self.http_client)
             .ok_or_else(|| AppleMusicError::config("Cannot modify HTTP client while in use"))?
             .set_user_token(user_token);
@@ -101,15 +82,51 @@ impl AppleMusicClient {
 
     /// Get the current user token
     pub async fn user_token(&self) -> Option<String> {
-        self.auth.lock().await.user_token().map(|s| s.to_string())
+        self.http_client.user_token().map(|s| s.to_string())
     }
 
     /// Check if user token is available
     pub async fn has_user_token(&self) -> bool {
-        self.auth.lock().await.has_user_token()
+        self.http_client.has_user_token()
     }
 
     // ===== CATALOG API METHODS =====
+
+    /// Search for songs by name in the Apple Music catalog
+    ///
+    /// This is a convenience method that searches specifically for songs.
+    /// For more control over search parameters, use [`search`](Self::search) or
+    /// [`search_with_options`](Self::search_with_options).
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The search term (song name, artist, etc.)
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector of [`Song`] objects matching the search term.
+    /// If no songs are found, returns an empty vector.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::{AppleMusicClient, ClientConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
+    /// # let client = AppleMusicClient::new(config).await?;
+    /// let songs = client.search_songs("Bohemian Rhapsody").await?;
+    /// for song in songs {
+    ///     println!("Found: {} by {}", song.attributes.name, song.attributes.artist_name);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn search_songs(&self, name: &str) -> Result<Vec<Song>> {
+        let response = self.search(name, &[MediaType::Songs]).await?;
+        Ok(response.results.songs
+            .map(|s| s.data)
+            .unwrap_or_default())
+    }
 
     /// Search the Apple Music catalog
     pub async fn search(&self, term: &str, types: &[MediaType]) -> Result<SearchResponse> {
@@ -234,13 +251,23 @@ impl AppleMusicClient {
             })
     }
 
-    /// Get a playlist by ID
-    pub async fn get_library_playlist_with_tracks(&self, id: &str) -> Result<Playlist> {
+    /// Get a library playlist by ID with tracks included
+    pub async fn get_library_playlist_with_tracks(&self, id: &str) -> Result<LibraryPlaylist> {
         crate::utils::validate_resource_id(id)?;
 
-        let path = format!("v1/me/library/playlists/{}?include=tracks", id);
+        let path = format!("v1/me/library/playlists/{}", id);
+        let params = vec![("include", "tracks".to_string())];
+        let params: Vec<(String, String)> = params
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect();
 
-        let response: ApiResponse<Playlist> = self.http_client.get_json(&path).await?;
+        let response: ApiResponse<LibraryPlaylist> = self
+            .http_client
+            .request(&path)
+            .query_params(params)
+            .get_json()
+            .await?;
 
         response
             .data
@@ -443,6 +470,138 @@ impl AppleMusicClient {
             .await?;
 
         Ok(response)
+    }
+
+    /// Create a new playlist in the user's library
+    ///
+    /// Creates a new, empty playlist in the authenticated user's library.
+    /// After creation, you can add tracks using [`add_tracks_to_playlist`](Self::add_tracks_to_playlist).
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the playlist to create
+    /// * `description` - Optional description for the playlist
+    ///
+    /// # Returns
+    ///
+    /// Returns the newly created [`LibraryPlaylist`] object containing the playlist ID
+    /// and other metadata.
+    ///
+    /// # Errors
+    ///
+    /// * Returns an error if no user token is set. Call [`set_user_token`](Self::set_user_token) first.
+    /// * Returns an API error if the playlist creation fails on the server.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::{AppleMusicClient, ClientConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
+    /// # config.user_token = Some("user_token".to_string());
+    /// # let client = AppleMusicClient::new(config).await?;
+    /// let playlist = client.create_library_playlist(
+    ///     "My Awesome Playlist",
+    ///     Some("A collection of my favorite tracks")
+    /// ).await?;
+    /// println!("Created playlist with ID: {}", playlist.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn create_library_playlist(
+        &self,
+        name: &str,
+        description: Option<&str>,
+    ) -> Result<LibraryPlaylist> {
+        self.check_user_token()?;
+
+        let request = CreatePlaylistRequest {
+            attributes: CreatePlaylistAttributes {
+                name: name.to_string(),
+                description: description.map(|s| s.to_string()),
+            },
+        };
+
+        let response: CreatePlaylistResponse = self
+            .http_client
+            .post_json("v1/me/library/playlists", &request)
+            .await?;
+
+        response
+            .data
+            .into_iter()
+            .next()
+            .ok_or_else(|| AppleMusicError::Api {
+                status: 500,
+                message: "Failed to create playlist".to_string(),
+            })
+    }
+
+    /// Add tracks to a library playlist
+    ///
+    /// Adds one or more songs to an existing playlist in the user's library.
+    /// The tracks are appended to the end of the playlist.
+    ///
+    /// # Arguments
+    ///
+    /// * `playlist_id` - The ID of the library playlist to add tracks to
+    /// * `track_ids` - A slice of song IDs to add to the playlist
+    ///
+    /// # Errors
+    ///
+    /// * Returns an error if no user token is set. Call [`set_user_token`](Self::set_user_token) first.
+    /// * Returns an error if the playlist ID or any track ID is invalid.
+    /// * Returns an API error if the operation fails on the server.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::{AppleMusicClient, ClientConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
+    /// # config.user_token = Some("user_token".to_string());
+    /// # let client = AppleMusicClient::new(config).await?;
+    /// // First, create a playlist
+    /// let playlist = client.create_library_playlist("Road Trip", None).await?;
+    ///
+    /// // Search for some songs
+    /// let songs = client.search_songs("highway").await?;
+    /// let song_ids: Vec<&str> = songs.iter().take(5).map(|s| s.id.as_str()).collect();
+    ///
+    /// // Add the songs to the playlist
+    /// client.add_tracks_to_playlist(&playlist.id, &song_ids).await?;
+    /// println!("Added {} tracks to playlist", song_ids.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn add_tracks_to_playlist(
+        &self,
+        playlist_id: &str,
+        track_ids: &[&str],
+    ) -> Result<()> {
+        self.check_user_token()?;
+        crate::utils::validate_resource_id(playlist_id)?;
+
+        for id in track_ids {
+            crate::utils::validate_resource_id(id)?;
+        }
+
+        let request = AddTracksToPlaylistRequest {
+            data: track_ids
+                .iter()
+                .map(|id| TrackReference {
+                    id: id.to_string(),
+                    resource_type: "songs".to_string(),
+                })
+                .collect(),
+        };
+
+        let path = format!("v1/me/library/playlists/{}/tracks", playlist_id);
+        self.http_client
+            .post_json_no_response(&path, &request)
+            .await?;
+
+        Ok(())
     }
 
     // ===== UTILITY METHODS =====

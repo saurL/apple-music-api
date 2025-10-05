@@ -149,6 +149,49 @@ impl HttpClient {
         response.json().await.map_err(AppleMusicError::Http)
     }
 
+    /// Post JSON without expecting a response body
+    ///
+    /// Executes a POST request with JSON body when no response data is expected.
+    /// This is useful for API endpoints that return 204 No Content or empty responses.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The API endpoint path
+    /// * `body` - The JSON-serializable request body
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` if the request succeeds, or an error if the request fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::http::HttpClient;
+    /// # use apple_music_api::config::ClientConfig;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "key_path".to_string())?;
+    /// # let client = HttpClient::new(&config)?;
+    /// use serde::Serialize;
+    ///
+    /// #[derive(Serialize)]
+    /// struct MyRequest {
+    ///     field: String,
+    /// }
+    ///
+    /// let request = MyRequest { field: "value".to_string() };
+    /// client.post_json_no_response("v1/me/library/playlists/123/tracks", &request).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn post_json_no_response<T: serde::Serialize>(
+        &self,
+        path: &str,
+        body: &T,
+    ) -> Result<()> {
+        let _response = self.post(path, body).await?;
+        Ok(())
+    }
+
     /// Put JSON and get JSON response
     pub async fn put_json<T: serde::Serialize, U: serde::de::DeserializeOwned>(
         &self,

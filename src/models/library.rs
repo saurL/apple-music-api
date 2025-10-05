@@ -479,3 +479,67 @@ pub struct LibraryResource {
     #[serde(rename = "href")]
     pub href: Option<String>,
 }
+
+/// Request body for creating a new library playlist
+///
+/// This structure is used when creating a new playlist via the Apple Music API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistRequest {
+    /// Playlist attributes containing the name and optional description
+    #[serde(rename = "attributes")]
+    pub attributes: CreatePlaylistAttributes,
+}
+
+/// Attributes for creating a playlist
+///
+/// Contains the required and optional fields for playlist creation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistAttributes {
+    /// The name of the playlist (required)
+    #[serde(rename = "name")]
+    pub name: String,
+
+    /// Optional description for the playlist
+    ///
+    /// This field is omitted from the JSON if None.
+    #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+/// Response received when creating a playlist
+///
+/// Contains the newly created playlist data from the Apple Music API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistResponse {
+    /// The created playlist data
+    ///
+    /// Usually contains a single playlist, but is returned as a vector
+    /// to match the API response format.
+    #[serde(rename = "data")]
+    pub data: Vec<LibraryPlaylist>,
+}
+
+/// Request body for adding tracks to a playlist
+///
+/// This structure is used to add one or more songs to an existing playlist.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddTracksToPlaylistRequest {
+    /// Array of track references to add to the playlist
+    #[serde(rename = "data")]
+    pub data: Vec<TrackReference>,
+}
+
+/// Reference to a track for adding to a playlist
+///
+/// Contains the minimal information needed to identify a song
+/// when adding it to a playlist.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrackReference {
+    /// The song/track ID
+    #[serde(rename = "id")]
+    pub id: String,
+
+    /// The resource type (typically "songs")
+    #[serde(rename = "type")]
+    pub resource_type: String,
+}
