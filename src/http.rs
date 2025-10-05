@@ -298,7 +298,19 @@ impl<'a> RequestBuilder<'a> {
         let response = self.get().await?;
         let text = response.text().await.map_err(AppleMusicError::Http)?;
         println!("RAW RESPONSE: {}", text);
-        serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
+        match serde_json::from_str::<T>(&text) {
+            Ok(val) => Ok(val),
+            Err(e) => {
+                eprintln!("Serde JSON error: {}", e);
+                eprintln!("Failed while parsing response of length {}", text.len());
+                eprintln!("Error type: {:?}", e.classify());
+                // tu peux aussi dumper un extrait du début
+                let preview = &text[..text.len().min(500)];
+                eprintln!("Response preview (first 500 chars): {}", preview);
+
+                Err(AppleMusicError::Serialization(e))
+            }
+        }
     }
 }
 

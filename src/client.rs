@@ -259,8 +259,7 @@ impl AppleMusicClient {
             .into_iter()
             .map(|(k, v)| (k.to_string(), v))
             .collect();
-        println!("Path: {}", path);
-        println!("Params: {:?}", params);
+
         let response: ApiResponse<LibraryPlaylist> = self
             .http_client
             .request(&path)
