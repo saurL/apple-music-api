@@ -136,8 +136,7 @@ impl HttpClient {
     /// Get the response as JSON
     pub async fn get_json<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
         let response = self.get(path).await?;
-        let text = response.text().await.map_err(AppleMusicError::Http)?;
-        serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
+        response.json().await.map_err(AppleMusicError::Http)
     }
 
     /// Post JSON and get JSON response
@@ -147,8 +146,7 @@ impl HttpClient {
         body: &T,
     ) -> Result<U> {
         let response = self.post(path, body).await?;
-        let text = response.text().await.map_err(AppleMusicError::Http)?;
-        serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
+        response.json().await.map_err(AppleMusicError::Http)
     }
 
     /// Post JSON without expecting a response body
@@ -201,8 +199,7 @@ impl HttpClient {
         body: &T,
     ) -> Result<U> {
         let response = self.put(path, body).await?;
-        let text = response.text().await.map_err(AppleMusicError::Http)?;
-        serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
+        response.json().await.map_err(AppleMusicError::Http)
     }
 
     /// Update the user token
@@ -296,27 +293,7 @@ impl<'a> RequestBuilder<'a> {
     /// Execute GET request and parse JSON response
     pub async fn get_json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
         let response = self.get().await?;
-        eprintln!("HTTP Status: {}", response.status());
-        eprintln!("Headers: {:?}", response.headers());
-        let text = response.text().await.map_err(AppleMusicError::Http)?;
-
-        eprintln!("RAW RESPONSE length: {}", text.len());
-
-        match serde_json::from_str::<T>(&text) {
-            Ok(val) => Ok(val),
-            Err(e) => {
-                eprintln!("Serde JSON error: {}", e);
-                eprintln!("Response length: {}", text.len());
-
-                // Dump un bout pour voir si c’est tronqué
-                let start = &text[..text.len().min(500)];
-                let end = &text[text.len().saturating_sub(500)..];
-                eprintln!("Response START (first 500): {}", start);
-                eprintln!("Response END (last 500): {}", end);
-
-                Err(AppleMusicError::Serialization(e))
-            }
-        }
+        response.json().await.map_err(AppleMusicError::Http)
     }
 }
 

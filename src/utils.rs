@@ -297,3 +297,30 @@ impl ResponseMeta {
             .map_or(false, |total| current_count < total as usize)
     }
 }
+
+/// Custom deserializer for optional dates that handles both full datetime and date-only formats
+pub fn deserialize_optional_date<'de, D>(deserializer: D) -> std::result::Result<Option<chrono::DateTime<chrono::Utc>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+
+    let opt: Option<String> = Option::deserialize(deserializer)?;
+    match opt {
+        None => Ok(None),
+        Some(s) => {
+            // Try parsing as full datetime first
+            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&s) {
+                return Ok(Some(dt.with_timezone(&chrono::Utc)));
+            }
+
+            // Try parsing as date-only (YYYY-MM-DD)
+            if let Ok(date) = chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
+                return Ok(Some(date.and_hms_opt(0, 0, 0).unwrap().and_utc()));
+            }
+
+            // If neither works, return None
+            Ok(None)
+        }
+    }
+}

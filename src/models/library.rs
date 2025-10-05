@@ -72,7 +72,7 @@ pub struct LibrarySongAttributes {
     pub play_params: Option<PlayParameters>,
 
     /// The release date
-    #[serde(rename = "releaseDate")]
+    #[serde(rename = "releaseDate", default, deserialize_with = "crate::utils::deserialize_optional_date")]
     pub release_date: Option<DateTime<Utc>>,
 
     /// The track number
@@ -152,7 +152,7 @@ pub struct LibraryAlbumAttributes {
     pub play_params: Option<PlayParameters>,
 
     /// The release date
-    #[serde(rename = "releaseDate")]
+    #[serde(rename = "releaseDate", default, deserialize_with = "crate::utils::deserialize_optional_date")]
     pub release_date: Option<DateTime<Utc>>,
 
     /// The track count
@@ -370,7 +370,7 @@ pub struct LibraryMusicVideoAttributes {
     pub play_params: Option<PlayParameters>,
 
     /// The release date
-    #[serde(rename = "releaseDate")]
+    #[serde(rename = "releaseDate", default, deserialize_with = "crate::utils::deserialize_optional_date")]
     pub release_date: Option<DateTime<Utc>>,
 
     /// The track number

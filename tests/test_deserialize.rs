@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::models::{common::ApiResponse, library::LibraryPlaylist};
+    use apple_music_api::models::{common::ApiResponse, library::LibraryPlaylist};
 
     #[test]
     fn test_deserialize_playlist_with_tracks() {
