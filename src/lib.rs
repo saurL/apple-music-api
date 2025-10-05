@@ -78,6 +78,9 @@ pub mod http;
 pub mod models;
 pub mod utils;
 
+#[cfg(test)]
+mod test_deserialize;
+
 // Re-export main types for convenience
 pub use auth::create_developer_token;
 pub use client::AppleMusicClient;
@@ -87,3 +90,9 @@ pub use models::*;
 // Re-export common types
 pub use reqwest;
 pub use serde_json;
+
+#[cfg(test)]
+mod test_step_by_step;
+
+#[cfg(test)]
+mod test_json_validity;

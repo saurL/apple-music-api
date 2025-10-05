@@ -142,9 +142,13 @@ pub struct PlayParameters {
     #[serde(rename = "catalogId")]
     pub catalog_id: Option<String>,
 
-    /// Additional parameters
+    /// Whether reporting is enabled
     #[serde(rename = "reporting")]
     pub reporting: Option<bool>,
+
+    /// The reporting ID
+    #[serde(rename = "reportingId")]
+    pub reporting_id: Option<String>,
 
     /// Preview parameters
     #[serde(rename = "preview")]
@@ -177,6 +181,10 @@ pub struct Relationship<T> {
     /// The next URL for pagination
     #[serde(rename = "next")]
     pub next: Option<String>,
+
+    /// Meta information for the relationship
+    #[serde(rename = "meta", skip_serializing_if = "Option::is_none")]
+    pub meta: Option<PaginationMeta>,
 }
 
 impl<T> Default for Relationship<T> {
@@ -185,6 +193,7 @@ impl<T> Default for Relationship<T> {
             data: Vec::new(),
             href: None,
             next: None,
+            meta: None,
         }
     }
 }

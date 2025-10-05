@@ -22,10 +22,6 @@ pub struct LibrarySong {
     /// The song attributes
     #[serde(rename = "attributes")]
     pub attributes: LibrarySongAttributes,
-
-    /// The song relationships
-    #[serde(rename = "relationships")]
-    pub relationships: Option<LibrarySongRelationships>,
 }
 
 /// Library song attributes
@@ -56,11 +52,11 @@ pub struct LibrarySongAttributes {
     pub duration_in_millis: Option<u64>,
 
     /// The genre names
-    #[serde(rename = "genreNames")]
+    #[serde(rename = "genreNames", default)]
     pub genre_names: Vec<String>,
 
     /// Whether the song has lyrics
-    #[serde(rename = "hasLyrics")]
+    #[serde(rename = "hasLyrics", default)]
     pub has_lyrics: bool,
 
     /// The ISRC
@@ -255,8 +251,12 @@ pub struct LibraryPlaylist {
 /// Library playlist attributes
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LibraryPlaylistAttributes {
+    /// The artwork
+    #[serde(rename = "artwork")]
+    pub artwork: Option<Artwork>,
+
     /// Whether the playlist can be edited
-    #[serde(rename = "canEdit")]
+    #[serde(rename = "canEdit", default)]
     pub can_edit: bool,
 
     /// The date added to library
@@ -268,8 +268,16 @@ pub struct LibraryPlaylistAttributes {
     pub description: Option<EditorialNotes>,
 
     /// Whether the playlist has catalog
-    #[serde(rename = "hasCatalog")]
+    #[serde(rename = "hasCatalog", default)]
     pub has_catalog: bool,
+
+    /// Whether the playlist is public
+    #[serde(rename = "isPublic")]
+    pub is_public: Option<bool>,
+
+    /// The last modified date
+    #[serde(rename = "lastModifiedDate")]
+    pub last_modified_date: Option<DateTime<Utc>>,
 
     /// The playlist name
     #[serde(rename = "name")]
