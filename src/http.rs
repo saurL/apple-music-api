@@ -297,6 +297,7 @@ impl<'a> RequestBuilder<'a> {
     pub async fn get_json<T: serde::de::DeserializeOwned>(self) -> Result<T> {
         let response = self.get().await?;
         let text = response.text().await.map_err(AppleMusicError::Http)?;
+        println!("RAW RESPONSE: {}", text);
         serde_json::from_str(&text).map_err(AppleMusicError::Serialization)
     }
 }
