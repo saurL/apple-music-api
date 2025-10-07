@@ -12,5 +12,5 @@ pub use common::*;
 pub use library::{
     CreatePlaylistRelationships, CreatePlaylistTracksRelationship,
     CreatePlaylistParentRelationship, ParentFolderReference, TrackReference,
-    LibraryPlaylistFolder, LibraryPlaylistFolderAttributes,
+    LibraryPlaylistFolder, LibraryPlaylistFolderAttributes, LibraryPlaylistFoldersResponse,
 };

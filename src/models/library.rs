@@ -342,6 +342,22 @@ pub struct LibraryPlaylistFolderAttributes {
     pub date_added: Option<DateTime<Utc>>,
 }
 
+/// Response for library playlist folders
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LibraryPlaylistFoldersResponse {
+    /// The response data
+    #[serde(rename = "data")]
+    pub data: Vec<LibraryPlaylistFolder>,
+
+    /// The next URL for pagination
+    #[serde(rename = "next")]
+    pub next: Option<String>,
+
+    /// Meta information
+    #[serde(rename = "meta")]
+    pub meta: Option<PaginationMeta>,
+}
+
 /// Library music video resource
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LibraryMusicVideo {

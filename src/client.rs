@@ -600,6 +600,99 @@ impl AppleMusicClient {
             })
     }
 
+    /// Get all library playlist folders
+    ///
+    /// Retrieves all playlist folders from the user's Apple Music library.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `LibraryPlaylistFoldersResponse` containing all folders.
+    ///
+    /// # Errors
+    ///
+    /// * Returns an error if no user token is set. Call [`set_user_token`](Self::set_user_token) first.
+    /// * Returns an API error if the request fails on the server.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::{AppleMusicClient, ClientConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
+    /// # config.user_token = Some("user_token".to_string());
+    /// # let client = AppleMusicClient::new(config).await?;
+    /// let folders = client.get_library_folders().await?;
+    /// for folder in folders.data {
+    ///     println!("Folder: {} (ID: {})", folder.attributes.name, folder.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_library_folders(&self) -> Result<LibraryPlaylistFoldersResponse> {
+        self.check_user_token()?;
+
+        let response: LibraryPlaylistFoldersResponse = self
+            .http_client
+            .get_json("v1/me/library/playlist-folders")
+            .await?;
+
+        Ok(response)
+    }
+
+    /// Get or create a library playlist folder
+    ///
+    /// Checks if a folder with the given name already exists. If it does, returns the existing folder.
+    /// If not, creates a new folder with that name.
+    ///
+    /// # Arguments
+    ///
+    /// * `folder_name` - The name of the folder to get or create
+    ///
+    /// # Returns
+    ///
+    /// Returns a `LibraryPlaylistFolder` - either the existing one or a newly created one.
+    ///
+    /// # Errors
+    ///
+    /// * Returns an error if no user token is set. Call [`set_user_token`](Self::set_user_token) first.
+    /// * Returns an API error if the request fails on the server.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::{AppleMusicClient, ClientConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
+    /// # config.user_token = Some("user_token".to_string());
+    /// # let client = AppleMusicClient::new(config).await?;
+    /// // This will return existing folder or create a new one
+    /// let folder = client.get_or_create_library_folder("My Playlists").await?;
+    /// println!("Folder ID: {}, Name: {}", folder.id, folder.attributes.name);
+    ///
+    /// // Calling again with same name returns the existing folder
+    /// let same_folder = client.get_or_create_library_folder("My Playlists").await?;
+    /// assert_eq!(folder.id, same_folder.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_or_create_library_folder(
+        &self,
+        folder_name: &str,
+    ) -> Result<LibraryPlaylistFolder> {
+        self.check_user_token()?;
+
+        // Get all existing folders
+        let folders = self.get_library_folders().await?;
+
+        // Check if a folder with this name already exists
+        if let Some(existing_folder) = folders.data.into_iter().find(|f| f.attributes.name == folder_name) {
+            return Ok(existing_folder);
+        }
+
+        // Folder doesn't exist, create it
+        self.create_library_folder(folder_name).await
+    }
+
     /// Add tracks to a library playlist
     ///
     /// Adds one or more songs to an existing playlist in the user's library.
