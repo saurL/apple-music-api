@@ -7,6 +7,7 @@ use crate::{
     models::{catalog::*, common::*, library::*, search::*},
     utils::SearchParamsBuilder,
 };
+use crate::models::library::CreatePlaylistData;
 use std::sync::Arc;
 
 /// Main Apple Music API client
@@ -514,10 +515,13 @@ impl AppleMusicClient {
         self.check_user_token()?;
 
         let request = CreatePlaylistRequest {
-            attributes: CreatePlaylistAttributes {
-                name: name.to_string(),
-                description: description.map(|s| s.to_string()),
-            },
+            data: vec![CreatePlaylistData {
+                attributes: CreatePlaylistAttributes {
+                    name: name.to_string(),
+                    description: description.map(|s| s.to_string()),
+                },
+                resource_type: "library-playlists".to_string(),
+            }],
         };
 
         let response: CreatePlaylistResponse = self

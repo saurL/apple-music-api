@@ -499,9 +499,21 @@ pub struct LibraryResource {
 /// This structure is used when creating a new playlist via the Apple Music API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreatePlaylistRequest {
+    /// The data array containing playlist objects
+    #[serde(rename = "data")]
+    pub data: Vec<CreatePlaylistData>,
+}
+
+/// Wrapper for playlist creation data
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistData {
     /// Playlist attributes containing the name and optional description
     #[serde(rename = "attributes")]
     pub attributes: CreatePlaylistAttributes,
+
+    /// The resource type (must be "library-playlists")
+    #[serde(rename = "type")]
+    pub resource_type: String,
 }
 
 /// Attributes for creating a playlist
