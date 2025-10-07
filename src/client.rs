@@ -522,7 +522,7 @@ impl AppleMusicClient {
             attributes: CreatePlaylistAttributes {
                 name: name.to_string(),
                 description: description.map(|s| s.to_string()),
-                is_public: is_public.unwrap_or(false),
+                // is_public: is_public.unwrap_or(false),
             },
             relationships,
         };
