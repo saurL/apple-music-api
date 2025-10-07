@@ -59,8 +59,12 @@
 //!     let songs = client.search_songs("Bohemian Rhapsody").await?;
 //!     println!("Found {} songs", songs.len());
 //!
-//!     // Create a private playlist (requires user token)
-//!     let playlist = client.create_library_playlist("My Playlist", None, None, None).await?;
+//!     // Create a folder for organizing playlists (requires user token)
+//!     let folder = client.create_library_folder("My API Playlists").await?;
+//!     println!("Created folder: {}", folder.attributes.name);
+//!
+//!     // Create a private playlist in that folder (requires user token)
+//!     let playlist = client.create_library_playlist("My Playlist", &folder.id, None, None).await?;
 //!
 //!     // Add tracks to playlist
 //!     let track_ids: Vec<&str> = songs.iter().take(3).map(|s| s.id.as_str()).collect();

@@ -498,12 +498,15 @@ impl AppleMusicClient {
     /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
     /// # config.user_token = Some("user_token".to_string());
     /// # let client = AppleMusicClient::new(config).await?;
-    /// // Create a private playlist
+    /// // First create a folder
+    /// let folder = client.create_library_folder("My Playlists").await?;
+    ///
+    /// // Create a private playlist in that folder
     /// let playlist = client.create_library_playlist(
     ///     "My Awesome Playlist",
+    ///     &folder.id,
     ///     Some("A collection of my favorite tracks"),
-    ///     Some(false),
-    ///     None
+    ///     Some(false)
     /// ).await?;
     /// println!("Created playlist with ID: {}", playlist.id);
     /// # Ok(())
@@ -512,20 +515,18 @@ impl AppleMusicClient {
     pub async fn create_library_playlist(
         &self,
         name: &str,
+        folder_id: &str,
         description: Option<&str>,
         is_public: Option<bool>,
-        relationships: Option<CreatePlaylistRelationships>,
     ) -> Result<LibraryPlaylist> {
         self.check_user_token()?;
 
-        let request = CreatePlaylistRequest {
-            attributes: CreatePlaylistAttributes {
-                name: name.to_string(),
-                description: description.map(|s| s.to_string()),
-                // is_public: is_public.unwrap_or(false),
-            },
-            relationships,
-        };
+        let request = CreatePlaylistRequest::new(
+            name,
+            folder_id,
+            description.map(|s| s.to_string()),
+            is_public,
+        );
 
         let response: CreatePlaylistResponse = self
             .http_client
@@ -539,6 +540,63 @@ impl AppleMusicClient {
             .ok_or_else(|| AppleMusicError::Api {
                 status: 500,
                 message: "Failed to create playlist".to_string(),
+            })
+    }
+
+    /// Create a new library playlist folder
+    ///
+    /// Creates a new folder in the user's Apple Music library to organize playlists.
+    ///
+    /// # Arguments
+    ///
+    /// * `folder_name` - The name of the folder to create
+    ///
+    /// # Returns
+    ///
+    /// Returns a `LibraryPlaylistFolder` containing the folder's ID, type, and attributes.
+    ///
+    /// # Errors
+    ///
+    /// * Returns an error if no user token is set. Call [`set_user_token`](Self::set_user_token) first.
+    /// * Returns an API error if the folder creation fails on the server.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::{AppleMusicClient, ClientConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
+    /// # config.user_token = Some("user_token".to_string());
+    /// # let client = AppleMusicClient::new(config).await?;
+    /// let folder = client.create_library_folder("Mes Playlists API").await?;
+    /// println!("Created folder with ID: {} and name: {}", folder.id, folder.attributes.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn create_library_folder(
+        &self,
+        folder_name: &str,
+    ) -> Result<LibraryPlaylistFolder> {
+        self.check_user_token()?;
+
+        let request = CreatePlaylistFolderRequest {
+            attributes: CreatePlaylistFolderAttributes {
+                name: folder_name.to_string(),
+            },
+        };
+
+        let response: CreatePlaylistFolderResponse = self
+            .http_client
+            .post_json("v1/me/library/playlist-folders", &request)
+            .await?;
+
+        response
+            .data
+            .into_iter()
+            .next()
+            .ok_or_else(|| AppleMusicError::Api {
+                status: 500,
+                message: "Failed to create folder".to_string(),
             })
     }
 
@@ -566,8 +624,9 @@ impl AppleMusicClient {
     /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
     /// # config.user_token = Some("user_token".to_string());
     /// # let client = AppleMusicClient::new(config).await?;
-    /// // First, create a playlist
-    /// let playlist = client.create_library_playlist("Road Trip", None, None, None).await?;
+    /// // First, create a folder and a playlist
+    /// let folder = client.create_library_folder("Road Trips").await?;
+    /// let playlist = client.create_library_playlist("Road Trip", &folder.id, None, None).await?;
     ///
     /// // Search for some songs
     /// let songs = client.search_songs("highway").await?;

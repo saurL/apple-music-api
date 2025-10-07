@@ -310,6 +310,38 @@ impl Default for LibraryPlaylistRelationships {
     }
 }
 
+/// Library playlist folder resource
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LibraryPlaylistFolder {
+    /// The folder ID
+    #[serde(rename = "id")]
+    pub id: String,
+
+    /// The resource type
+    #[serde(rename = "type")]
+    pub resource_type: String,
+
+    /// The folder href
+    #[serde(rename = "href")]
+    pub href: Option<String>,
+
+    /// The folder attributes
+    #[serde(rename = "attributes")]
+    pub attributes: LibraryPlaylistFolderAttributes,
+}
+
+/// Library playlist folder attributes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LibraryPlaylistFolderAttributes {
+    /// The folder name
+    #[serde(rename = "name")]
+    pub name: String,
+
+    /// The date added to library
+    #[serde(rename = "dateAdded")]
+    pub date_added: Option<DateTime<Utc>>,
+}
+
 /// Library music video resource
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LibraryMusicVideo {
@@ -509,15 +541,89 @@ pub struct LibraryResource {
 /// Request body for creating a new library playlist
 ///
 /// This structure is used when creating a new playlist via the Apple Music API.
+/// A parent folder ID is required.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreatePlaylistRequest {
     /// Playlist attributes containing the name and optional description
     #[serde(rename = "attributes")]
     pub attributes: CreatePlaylistAttributes,
 
-    /// Optional relationships (tracks to add, parent folder)
-    #[serde(rename = "relationships", skip_serializing_if = "Option::is_none")]
-    pub relationships: Option<CreatePlaylistRelationships>,
+    /// Relationships (tracks and parent folder)
+    #[serde(rename = "relationships")]
+    pub relationships: CreatePlaylistRelationships,
+}
+
+impl CreatePlaylistRequest {
+    /// Create a new playlist request with required folder_id
+    ///
+    /// Creates a playlist in the specified folder with an empty track list by default.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the playlist
+    /// * `folder_id` - The ID of the parent folder
+    /// * `description` - Optional description
+    /// * `is_public` - Whether the playlist is public (defaults to false)
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::models::library::CreatePlaylistRequest;
+    /// let request = CreatePlaylistRequest::new(
+    ///     "My Playlist",
+    ///     "p.folder123",
+    ///     Some("My description".to_string()),
+    ///     Some(false)
+    /// );
+    /// ```
+    pub fn new(
+        name: impl Into<String>,
+        folder_id: impl Into<String>,
+        description: Option<String>,
+        is_public: Option<bool>,
+    ) -> Self {
+        Self {
+            attributes: CreatePlaylistAttributes {
+                name: name.into(),
+                description,
+                is_public: Some(is_public.unwrap_or(false)),
+            },
+            relationships: CreatePlaylistRelationships {
+                tracks: CreatePlaylistTracksRelationship { data: vec![] },
+                parent: CreatePlaylistParentRelationship {
+                    data: vec![ParentFolderReference::new(folder_id)],
+                },
+            },
+        }
+    }
+
+    /// Create a playlist request with initial tracks
+    pub fn with_tracks(
+        name: impl Into<String>,
+        folder_id: impl Into<String>,
+        track_ids: Vec<impl Into<String>>,
+        description: Option<String>,
+        is_public: Option<bool>,
+    ) -> Self {
+        Self {
+            attributes: CreatePlaylistAttributes {
+                name: name.into(),
+                description,
+                is_public: Some(is_public.unwrap_or(false)),
+            },
+            relationships: CreatePlaylistRelationships {
+                tracks: CreatePlaylistTracksRelationship {
+                    data: track_ids
+                        .into_iter()
+                        .map(|id| TrackReference::new(id))
+                        .collect(),
+                },
+                parent: CreatePlaylistParentRelationship {
+                    data: vec![ParentFolderReference::new(folder_id)],
+                },
+            },
+        }
+    }
 }
 
 /// Relationships for creating a playlist
@@ -530,26 +636,6 @@ pub struct CreatePlaylistRelationships {
     /// Parent folder for the playlist
     #[serde(rename = "parent")]
     pub parent: CreatePlaylistParentRelationship,
-}
-
-impl CreatePlaylistRelationships {
-    /// Create relationships with both tracks and parent folder
-    pub fn with_tracks_and_parent(
-        track_ids: Vec<impl Into<String>>,
-        folder_id: impl Into<String>,
-    ) -> Self {
-        Self {
-            tracks: CreatePlaylistTracksRelationship {
-                data: track_ids
-                    .into_iter()
-                    .map(|id| TrackReference::new(id))
-                    .collect(),
-            },
-            parent: CreatePlaylistParentRelationship {
-                data: vec![ParentFolderReference::new(folder_id)],
-            },
-        }
-    }
 }
 
 /// Tracks relationship for playlist creation
@@ -609,11 +695,12 @@ pub struct CreatePlaylistAttributes {
     /// This field is omitted from the JSON if None.
     #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    // Whether the playlist is public
-    //
-    // This field is omitted from the JSON if None.
-    // #[serde(rename = "isPublic")]
-    // pub is_public: bool,
+
+    /// Whether the playlist is public
+    ///
+    /// This field is omitted from the JSON if None.
+    #[serde(rename = "isPublic", skip_serializing_if = "Option::is_none")]
+    pub is_public: Option<bool>,
 }
 
 /// Response received when creating a playlist
@@ -675,4 +762,28 @@ impl TrackReference {
             resource_type: resource_type.into(),
         }
     }
+}
+
+/// Request body for creating a new library playlist folder
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistFolderRequest {
+    /// Folder attributes containing the name
+    #[serde(rename = "attributes")]
+    pub attributes: CreatePlaylistFolderAttributes,
+}
+
+/// Attributes for creating a playlist folder
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistFolderAttributes {
+    /// The name of the folder (required)
+    #[serde(rename = "name")]
+    pub name: String,
+}
+
+/// Response received when creating a playlist folder
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistFolderResponse {
+    /// The created folder data
+    #[serde(rename = "data")]
+    pub data: Vec<LibraryPlaylistFolder>,
 }
