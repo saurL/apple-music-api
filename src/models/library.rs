@@ -607,7 +607,7 @@ pub struct CreatePlaylistAttributes {
     /// Optional description for the playlist
     ///
     /// This field is omitted from the JSON if None.
-    #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "description")]
     pub description: Option<String>,
 
     /// Whether the playlist is public
