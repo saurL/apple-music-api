@@ -7,3 +7,9 @@ pub mod search;
 
 // Re-export common types
 pub use common::*;
+
+// Re-export library types for public API
+pub use library::{
+    CreatePlaylistRelationships, CreatePlaylistTracksRelationship,
+    CreatePlaylistParentRelationship, ParentFolderReference, TrackReference,
+};

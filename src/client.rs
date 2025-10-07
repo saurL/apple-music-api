@@ -498,9 +498,12 @@ impl AppleMusicClient {
     /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
     /// # config.user_token = Some("user_token".to_string());
     /// # let client = AppleMusicClient::new(config).await?;
+    /// // Create a private playlist
     /// let playlist = client.create_library_playlist(
     ///     "My Awesome Playlist",
-    ///     Some("A collection of my favorite tracks")
+    ///     Some("A collection of my favorite tracks"),
+    ///     Some(false),
+    ///     None
     /// ).await?;
     /// println!("Created playlist with ID: {}", playlist.id);
     /// # Ok(())
@@ -510,6 +513,8 @@ impl AppleMusicClient {
         &self,
         name: &str,
         description: Option<&str>,
+        is_public: Option<bool>,
+        relationships: Option<CreatePlaylistRelationships>,
     ) -> Result<LibraryPlaylist> {
         self.check_user_token()?;
 
@@ -517,7 +522,9 @@ impl AppleMusicClient {
             attributes: CreatePlaylistAttributes {
                 name: name.to_string(),
                 description: description.map(|s| s.to_string()),
+                is_public: is_public.unwrap_or(false),
             },
+            relationships,
         };
 
         let response: CreatePlaylistResponse = self
@@ -560,7 +567,7 @@ impl AppleMusicClient {
     /// # config.user_token = Some("user_token".to_string());
     /// # let client = AppleMusicClient::new(config).await?;
     /// // First, create a playlist
-    /// let playlist = client.create_library_playlist("Road Trip", None).await?;
+    /// let playlist = client.create_library_playlist("Road Trip", None, None, None).await?;
     ///
     /// // Search for some songs
     /// let songs = client.search_songs("highway").await?;

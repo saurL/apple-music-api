@@ -72,7 +72,11 @@ pub struct LibrarySongAttributes {
     pub play_params: Option<PlayParameters>,
 
     /// The release date
-    #[serde(rename = "releaseDate", default, deserialize_with = "crate::utils::deserialize_optional_date")]
+    #[serde(
+        rename = "releaseDate",
+        default,
+        deserialize_with = "crate::utils::deserialize_optional_date"
+    )]
     pub release_date: Option<DateTime<Utc>>,
 
     /// The track number
@@ -152,7 +156,11 @@ pub struct LibraryAlbumAttributes {
     pub play_params: Option<PlayParameters>,
 
     /// The release date
-    #[serde(rename = "releaseDate", default, deserialize_with = "crate::utils::deserialize_optional_date")]
+    #[serde(
+        rename = "releaseDate",
+        default,
+        deserialize_with = "crate::utils::deserialize_optional_date"
+    )]
     pub release_date: Option<DateTime<Utc>>,
 
     /// The track count
@@ -370,7 +378,11 @@ pub struct LibraryMusicVideoAttributes {
     pub play_params: Option<PlayParameters>,
 
     /// The release date
-    #[serde(rename = "releaseDate", default, deserialize_with = "crate::utils::deserialize_optional_date")]
+    #[serde(
+        rename = "releaseDate",
+        default,
+        deserialize_with = "crate::utils::deserialize_optional_date"
+    )]
     pub release_date: Option<DateTime<Utc>>,
 
     /// The track number
@@ -502,6 +514,85 @@ pub struct CreatePlaylistRequest {
     /// Playlist attributes containing the name and optional description
     #[serde(rename = "attributes")]
     pub attributes: CreatePlaylistAttributes,
+
+    /// Optional relationships (tracks to add, parent folder)
+    #[serde(rename = "relationships", skip_serializing_if = "Option::is_none")]
+    pub relationships: Option<CreatePlaylistRelationships>,
+}
+
+/// Relationships for creating a playlist
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistRelationships {
+    /// Tracks to add to the playlist upon creation
+    #[serde(rename = "tracks")]
+    pub tracks: CreatePlaylistTracksRelationship,
+
+    /// Parent folder for the playlist
+    #[serde(rename = "parent")]
+    pub parent: CreatePlaylistParentRelationship,
+}
+
+impl CreatePlaylistRelationships {
+    /// Create relationships with both tracks and parent folder
+    pub fn with_tracks_and_parent(
+        track_ids: Vec<impl Into<String>>,
+        folder_id: impl Into<String>,
+    ) -> Self {
+        Self {
+            tracks: CreatePlaylistTracksRelationship {
+                data: track_ids
+                    .into_iter()
+                    .map(|id| TrackReference::new(id))
+                    .collect(),
+            },
+            parent: CreatePlaylistParentRelationship {
+                data: vec![ParentFolderReference::new(folder_id)],
+            },
+        }
+    }
+}
+
+/// Tracks relationship for playlist creation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistTracksRelationship {
+    /// Array of track references
+    #[serde(rename = "data")]
+    pub data: Vec<TrackReference>,
+}
+
+/// Parent folder relationship for playlist creation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistParentRelationship {
+    /// Array of parent folder references
+    #[serde(rename = "data")]
+    pub data: Vec<ParentFolderReference>,
+}
+
+/// Reference to a parent folder
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParentFolderReference {
+    /// The folder ID
+    #[serde(rename = "id")]
+    pub id: String,
+
+    /// The resource type (must be "library-playlist-folders")
+    #[serde(rename = "type", default = "default_parent_folder_type")]
+    pub resource_type: String,
+}
+
+/// Default value for parent folder resource type
+fn default_parent_folder_type() -> String {
+    "library-playlist-folders".to_string()
+}
+
+impl ParentFolderReference {
+    /// Create a new parent folder reference with just an ID
+    pub fn new(id: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            resource_type: "library-playlist-folders".to_string(),
+        }
+    }
 }
 
 /// Attributes for creating a playlist
@@ -518,6 +609,12 @@ pub struct CreatePlaylistAttributes {
     /// This field is omitted from the JSON if None.
     #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+
+    /// Whether the playlist is public
+    ///
+    /// This field is omitted from the JSON if None.
+    #[serde(rename = "isPublic")]
+    pub is_public: bool,
 }
 
 /// Response received when creating a playlist
@@ -553,7 +650,30 @@ pub struct TrackReference {
     #[serde(rename = "id")]
     pub id: String,
 
-    /// The resource type (typically "songs")
-    #[serde(rename = "type")]
+    /// The resource type (typically "songs" or "library-music-videos")
+    #[serde(rename = "type", default = "default_track_type")]
     pub resource_type: String,
+}
+
+/// Default value for track resource type
+fn default_track_type() -> String {
+    "songs".to_string()
+}
+
+impl TrackReference {
+    /// Create a new track reference for a song with just an ID
+    pub fn new(id: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            resource_type: "songs".to_string(),
+        }
+    }
+
+    /// Create a new track reference with a custom type (e.g., "library-music-videos")
+    pub fn with_type(id: impl Into<String>, resource_type: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            resource_type: resource_type.into(),
+        }
+    }
 }
