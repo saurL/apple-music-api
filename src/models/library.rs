@@ -613,8 +613,8 @@ pub struct CreatePlaylistAttributes {
     /// Whether the playlist is public
     ///
     /// This field is omitted from the JSON if None.
-    #[serde(rename = "isPublic")]
-    pub is_public: bool,
+    // #[serde(rename = "isPublic")]
+    // pub is_public: bool,
 }
 
 /// Response received when creating a playlist
