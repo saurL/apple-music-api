@@ -498,8 +498,9 @@ impl AppleMusicClient {
     /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
     /// # config.user_token = Some("user_token".to_string());
     /// # let client = AppleMusicClient::new(config).await?;
-    /// // First create a folder
-    /// let folder = client.create_library_folder("My Playlists").await?;
+    /// // Get the root folder and create a subfolder
+    /// let root = client.get_root_library_folder().await?;
+    /// let folder = client.create_library_folder("My Playlists", &root.id).await?;
     ///
     /// // Create a private playlist in that folder
     /// let playlist = client.create_library_playlist(
@@ -568,7 +569,11 @@ impl AppleMusicClient {
     /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
     /// # config.user_token = Some("user_token".to_string());
     /// # let client = AppleMusicClient::new(config).await?;
-    /// let folder = client.create_library_folder("Mes Playlists API").await?;
+    /// // Get the root folder
+    /// let root = client.get_root_library_folder().await?;
+    ///
+    /// // Create a folder in the root
+    /// let folder = client.create_library_folder("Mes Playlists API", &root.id).await?;
     /// println!("Created folder with ID: {} and name: {}", folder.id, folder.attributes.name);
     /// # Ok(())
     /// # }
@@ -576,14 +581,11 @@ impl AppleMusicClient {
     pub async fn create_library_folder(
         &self,
         folder_name: &str,
+        parent_folder_id: &str,
     ) -> Result<LibraryPlaylistFolder> {
         self.check_user_token()?;
 
-        let request = CreatePlaylistFolderRequest {
-            attributes: CreatePlaylistFolderAttributes {
-                name: folder_name.to_string(),
-            },
-        };
+        let request = CreatePlaylistFolderRequest::new(folder_name, parent_folder_id);
 
         let response: CreatePlaylistFolderResponse = self
             .http_client
@@ -639,14 +641,112 @@ impl AppleMusicClient {
         Ok(response)
     }
 
+    /// Get the root library playlists folder
+    ///
+    /// Retrieves the root folder for playlist organization in the user's Apple Music library.
+    /// This is the top-level folder that contains all other playlist folders.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `LibraryPlaylistFolder` representing the root folder.
+    ///
+    /// # Errors
+    ///
+    /// * Returns an error if no user token is set. Call [`set_user_token`](Self::set_user_token) first.
+    /// * Returns an API error if the request fails on the server.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::{AppleMusicClient, ClientConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
+    /// # config.user_token = Some("user_token".to_string());
+    /// # let client = AppleMusicClient::new(config).await?;
+    /// let root_folder = client.get_root_library_folder().await?;
+    /// println!("Root folder ID: {}", root_folder.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_root_library_folder(&self) -> Result<LibraryPlaylistFolder> {
+        self.check_user_token()?;
+
+        let response: LibraryPlaylistFoldersResponse = self
+            .http_client
+            .request("v1/me/library/playlist-folders")
+            .query_param("filter[identity]", "playlistsroot")
+            .get_json()
+            .await?;
+
+        response
+            .data
+            .into_iter()
+            .next()
+            .ok_or_else(|| AppleMusicError::Api {
+                status: 500,
+                message: "Root folder not found".to_string(),
+            })
+    }
+
+    /// Get a library playlist folder by ID
+    ///
+    /// Fetches a specific library playlist folder using its unique identifier.
+    ///
+    /// # Arguments
+    ///
+    /// * `folder_id` - The unique identifier for the library playlist folder
+    ///
+    /// # Returns
+    ///
+    /// Returns a `LibraryPlaylistFolder` for the specified ID.
+    ///
+    /// # Errors
+    ///
+    /// * Returns an error if no user token is set. Call [`set_user_token`](Self::set_user_token) first.
+    /// * Returns an API error if the folder is not found or the request fails.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use apple_music_api::{AppleMusicClient, ClientConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
+    /// # config.user_token = Some("user_token".to_string());
+    /// # let client = AppleMusicClient::new(config).await?;
+    /// let folder = client.get_library_folder_by_id("p.folder123").await?;
+    /// println!("Folder: {} (ID: {})", folder.attributes.name, folder.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_library_folder_by_id(&self, folder_id: &str) -> Result<LibraryPlaylistFolder> {
+        self.check_user_token()?;
+        crate::utils::validate_resource_id(folder_id)?;
+
+        let path = format!("v1/me/library/playlist-folders/{}", folder_id);
+        let response: LibraryPlaylistFoldersResponse = self
+            .http_client
+            .get_json(&path)
+            .await?;
+
+        response
+            .data
+            .into_iter()
+            .next()
+            .ok_or_else(|| AppleMusicError::Api {
+                status: 404,
+                message: format!("Folder with ID '{}' not found", folder_id),
+            })
+    }
+
     /// Get or create a library playlist folder
     ///
     /// Checks if a folder with the given name already exists. If it does, returns the existing folder.
-    /// If not, creates a new folder with that name.
+    /// If not, creates a new folder with that name in the specified parent folder.
     ///
     /// # Arguments
     ///
     /// * `folder_name` - The name of the folder to get or create
+    /// * `parent_folder_id` - The ID of the parent folder (used only if creating a new folder)
     ///
     /// # Returns
     ///
@@ -665,12 +765,15 @@ impl AppleMusicClient {
     /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
     /// # config.user_token = Some("user_token".to_string());
     /// # let client = AppleMusicClient::new(config).await?;
-    /// // This will return existing folder or create a new one
-    /// let folder = client.get_or_create_library_folder("My Playlists").await?;
+    /// // Get the root folder
+    /// let root = client.get_root_library_folder().await?;
+    ///
+    /// // This will return existing folder or create a new one in the root
+    /// let folder = client.get_or_create_library_folder("My Playlists", &root.id).await?;
     /// println!("Folder ID: {}, Name: {}", folder.id, folder.attributes.name);
     ///
     /// // Calling again with same name returns the existing folder
-    /// let same_folder = client.get_or_create_library_folder("My Playlists").await?;
+    /// let same_folder = client.get_or_create_library_folder("My Playlists", &root.id).await?;
     /// assert_eq!(folder.id, same_folder.id);
     /// # Ok(())
     /// # }
@@ -678,6 +781,7 @@ impl AppleMusicClient {
     pub async fn get_or_create_library_folder(
         &self,
         folder_name: &str,
+        parent_folder_id: &str,
     ) -> Result<LibraryPlaylistFolder> {
         self.check_user_token()?;
 
@@ -689,8 +793,8 @@ impl AppleMusicClient {
             return Ok(existing_folder);
         }
 
-        // Folder doesn't exist, create it
-        self.create_library_folder(folder_name).await
+        // Folder doesn't exist, create it in the specified parent folder
+        self.create_library_folder(folder_name, parent_folder_id).await
     }
 
     /// Add tracks to a library playlist
@@ -717,8 +821,9 @@ impl AppleMusicClient {
     /// # let mut config = ClientConfig::new("team_id".to_string(), "key_id".to_string(), "private_key_path".to_string())?;
     /// # config.user_token = Some("user_token".to_string());
     /// # let client = AppleMusicClient::new(config).await?;
-    /// // First, create a folder and a playlist
-    /// let folder = client.create_library_folder("Road Trips").await?;
+    /// // First, get root and create a folder and a playlist
+    /// let root = client.get_root_library_folder().await?;
+    /// let folder = client.create_library_folder("Road Trips", &root.id).await?;
     /// let playlist = client.create_library_playlist("Road Trip", &folder.id, None, None).await?;
     ///
     /// // Search for some songs

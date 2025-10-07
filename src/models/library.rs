@@ -786,6 +786,34 @@ pub struct CreatePlaylistFolderRequest {
     /// Folder attributes containing the name
     #[serde(rename = "attributes")]
     pub attributes: CreatePlaylistFolderAttributes,
+
+    /// Relationships (parent folder) - required
+    #[serde(rename = "relationships")]
+    pub relationships: CreatePlaylistFolderRelationships,
+}
+
+impl CreatePlaylistFolderRequest {
+    /// Create a new folder request with a parent folder
+    pub fn new(name: impl Into<String>, parent_folder_id: impl Into<String>) -> Self {
+        Self {
+            attributes: CreatePlaylistFolderAttributes {
+                name: name.into(),
+            },
+            relationships: CreatePlaylistFolderRelationships {
+                parent: CreatePlaylistParentRelationship {
+                    data: vec![ParentFolderReference::new(parent_folder_id)],
+                },
+            },
+        }
+    }
+}
+
+/// Relationships for creating a playlist folder
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePlaylistFolderRelationships {
+    /// Parent folder for the folder
+    #[serde(rename = "parent")]
+    pub parent: CreatePlaylistParentRelationship,
 }
 
 /// Attributes for creating a playlist folder

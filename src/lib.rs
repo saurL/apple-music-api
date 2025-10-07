@@ -60,7 +60,8 @@
 //!     println!("Found {} songs", songs.len());
 //!
 //!     // Create a folder for organizing playlists (requires user token)
-//!     let folder = client.create_library_folder("My API Playlists").await?;
+//!     let root = client.get_root_library_folder().await?;
+//!     let folder = client.create_library_folder("My API Playlists", &root.id).await?;
 //!     println!("Created folder: {}", folder.attributes.name);
 //!
 //!     // Create a private playlist in that folder (requires user token)
