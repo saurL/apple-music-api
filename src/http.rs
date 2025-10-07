@@ -46,6 +46,20 @@ impl HttpClient {
     /// Execute a POST request with JSON body
     pub async fn post<T: serde::Serialize>(&self, path: &str, body: &T) -> Result<Response> {
         let url = self.build_url(path)?;
+
+        // DEBUG: Serialize and print the request body
+        let body_json = serde_json::to_string_pretty(body).unwrap_or_default();
+        eprintln!("=== DEBUG POST REQUEST ===");
+        eprintln!("URL: {}", url);
+        eprintln!("Body:\n{}", body_json);
+        eprintln!("Developer Token: {}...", &self.developer_token.chars().take(20).collect::<String>());
+        if let Some(user_token) = &self.user_token {
+            eprintln!("User Token: {}...", &user_token.chars().take(20).collect::<String>());
+        } else {
+            eprintln!("User Token: None");
+        }
+        eprintln!("=========================\n");
+
         let mut request = self.client.post(&url).json(body);
 
         // Add authentication headers
