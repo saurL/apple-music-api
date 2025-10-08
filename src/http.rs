@@ -51,7 +51,12 @@ impl HttpClient {
 
         request = self.add_auth_headers(request);
 
-        let response = request.send().await.map_err(AppleMusicError::Http)?;
+        let response = request
+            .try_clone()
+            .unwrap()
+            .send()
+            .await
+            .map_err(AppleMusicError::Http)?;
         println!("Response Status: {}", response.status());
         println!("Response Headers: {:#?}", response.headers());
         println!(
@@ -59,6 +64,7 @@ impl HttpClient {
             response.text().await.unwrap_or_default()
         );
         println!("======================\n");
+        let response = request.send().await.map_err(AppleMusicError::Http)?;
         self.handle_response(response).await
     }
 
