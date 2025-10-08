@@ -601,8 +601,8 @@ pub struct CreatePlaylistRequest {
     pub attributes: CreatePlaylistAttributes,
 
     /// Relationships (tracks and parent folder)
-    #[serde(rename = "relationships")]
-    pub relationships: CreatePlaylistRelationships,
+    #[serde(rename = "relationships", skip_serializing_if = "Option::is_none")]
+    pub relationships: Option<CreatePlaylistRelationships>,
 }
 
 impl CreatePlaylistRequest {
@@ -628,32 +628,20 @@ impl CreatePlaylistRequest {
     ///     Some(false)
     /// );
     /// ```
-    pub fn new(
-        name: impl Into<String>,
-        folder_id: impl Into<String>,
-        description: Option<String>,
-        is_public: Option<bool>,
-    ) -> Self {
+    pub fn new(name: impl Into<String>, description: Option<String>) -> Self {
         Self {
             attributes: CreatePlaylistAttributes {
                 name: name.into(),
                 description,
-                is_public: Some(is_public.unwrap_or(false)),
+                is_public: None,
             },
-            relationships: CreatePlaylistRelationships {
-                tracks: CreatePlaylistTracksRelationship { data: vec![] },
-                parent: CreatePlaylistParentRelationship {
-                    data: vec![ParentFolderReference::new(folder_id)],
-                },
-            },
+            relationships: None,
         }
     }
 
     /// Create a playlist request with initial tracks
     pub fn with_tracks(
         name: impl Into<String>,
-        folder_id: impl Into<String>,
-        track_ids: Vec<impl Into<String>>,
         description: Option<String>,
         is_public: Option<bool>,
     ) -> Self {
@@ -663,17 +651,7 @@ impl CreatePlaylistRequest {
                 description,
                 is_public: Some(is_public.unwrap_or(false)),
             },
-            relationships: CreatePlaylistRelationships {
-                tracks: CreatePlaylistTracksRelationship {
-                    data: track_ids
-                        .into_iter()
-                        .map(|id| TrackReference::new(id))
-                        .collect(),
-                },
-                parent: CreatePlaylistParentRelationship {
-                    data: vec![ParentFolderReference::new(folder_id)],
-                },
-            },
+            relationships: None,
         }
     }
 }
@@ -832,9 +810,7 @@ impl CreatePlaylistFolderRequest {
     /// Create a new folder request with a parent folder
     pub fn new(name: impl Into<String>, parent_folder_id: impl Into<String>) -> Self {
         Self {
-            attributes: CreatePlaylistFolderAttributes {
-                name: name.into(),
-            },
+            attributes: CreatePlaylistFolderAttributes { name: name.into() },
             relationships: CreatePlaylistFolderRelationships {
                 parent: CreatePlaylistParentRelationship {
                     data: vec![ParentFolderReference::new(parent_folder_id)],

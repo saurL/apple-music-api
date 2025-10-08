@@ -516,18 +516,11 @@ impl AppleMusicClient {
     pub async fn create_library_playlist(
         &self,
         name: &str,
-        folder_id: &str,
         description: Option<&str>,
-        is_public: Option<bool>,
     ) -> Result<LibraryPlaylist> {
         self.check_user_token()?;
 
-        let request = CreatePlaylistRequest::new(
-            name,
-            folder_id,
-            description.map(|s| s.to_string()),
-            is_public,
-        );
+        let request = CreatePlaylistRequest::new(name, description.map(|s| s.to_string()));
 
         let response: CreatePlaylistResponse = self
             .http_client
@@ -671,61 +664,24 @@ impl AppleMusicClient {
     pub async fn get_root_library_folder(&self) -> Result<LibraryPlaylistFolder> {
         self.check_user_token()?;
 
-        // Get raw response first
-        let raw_response = self
+        let response: RootLibraryFolderResponse = self
             .http_client
             .request("v1/me/library/playlist-folders")
             .query_param("filter[identity]", "playlistsroot")
-            .get()
+            .get_json()
             .await?;
 
-        let status = raw_response.status();
-        eprintln!("=== DEBUG GET ROOT FOLDER ===");
-        eprintln!("Status: {}", status);
-
-        let body_text = raw_response.text().await.map_err(crate::error::AppleMusicError::Http)?;
-        eprintln!("Body:\n{}", body_text);
-        eprintln!("=============================\n");
-
-        // Now parse the response
-        let response: RootLibraryFolderResponse = serde_json::from_str(&body_text)
-            .map_err(|e| AppleMusicError::Api {
-                status: status.as_u16(),
-                message: format!("Failed to parse response: {}. Body: {}", e, body_text),
-            })?;
-
-        // Check if root folder is in the filtered response
-        if let Some(root_folder) = response.meta.filters.identity.playlistsroot.into_iter().next() {
-            return Ok(root_folder);
-        }
-
-        // If filter didn't return root folder, try getting by ID directly
-        eprintln!("Root folder not found with filter, trying direct access...");
-
-        // Try to get the root folder by its known ID
-        match self.get_library_folder_by_id("p.playlistsroot").await {
-            Ok(folder) => Ok(folder),
-            Err(_) => {
-                // If that fails too, get all folders and look for root
-                eprintln!("Direct access failed, listing all folders...");
-                let all_folders = self.get_library_folders().await?;
-
-                eprintln!("Found {} folders total:", all_folders.data.len());
-                for folder in &all_folders.data {
-                    eprintln!("  - {} (ID: {})", folder.attributes.name, folder.id);
-                }
-
-                // Look for folder with ID containing "root"
-                all_folders
-                    .data
-                    .into_iter()
-                    .find(|f| f.id.to_lowercase().contains("root"))
-                    .ok_or_else(|| AppleMusicError::Api {
-                        status: 404,
-                        message: "Root folder not found. The library may not have been initialized yet.".to_string(),
-                    })
-            }
-        }
+        response
+            .meta
+            .filters
+            .identity
+            .playlistsroot
+            .into_iter()
+            .next()
+            .ok_or_else(|| AppleMusicError::Api {
+                status: 404,
+                message: "Root folder not found. You need to create at least one folder first to initialize the library structure.".to_string(),
+            })
     }
 
     /// Get a library playlist folder by ID

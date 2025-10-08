@@ -52,9 +52,15 @@ impl HttpClient {
         eprintln!("=== DEBUG POST REQUEST ===");
         eprintln!("URL: {}", url);
         eprintln!("Body:\n{}", body_json);
-        eprintln!("Developer Token: {}...", &self.developer_token.chars().take(20).collect::<String>());
+        eprintln!(
+            "Developer Token: {}...",
+            &self.developer_token.chars().take(20).collect::<String>()
+        );
         if let Some(user_token) = &self.user_token {
-            eprintln!("User Token: {}...", &user_token.chars().take(20).collect::<String>());
+            eprintln!(
+                "User Token: {}...",
+                &user_token.chars().take(20).collect::<String>()
+            );
         } else {
             eprintln!("User Token: None");
         }
@@ -159,6 +165,10 @@ impl HttpClient {
         path: &str,
         body: &T,
     ) -> Result<U> {
+        println!("=== DEBUG POST_JSON ===");
+        println!("Path: {}", path);
+        println!("Body: {:#?}", body);
+        println!("======================\n");
         let response = self.post(path, body).await?;
         response.json().await.map_err(AppleMusicError::Http)
     }
