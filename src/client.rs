@@ -671,13 +671,29 @@ impl AppleMusicClient {
     pub async fn get_root_library_folder(&self) -> Result<LibraryPlaylistFolder> {
         self.check_user_token()?;
 
-        let response: RootLibraryFolderResponse = self
+        // Get raw response first
+        let raw_response = self
             .http_client
             .request("v1/me/library/playlist-folders")
             .query_param("filter[identity]", "playlistsroot")
-            .get_json()
+            .get()
             .await?;
-        println!("Response: {:?}", response);
+
+        let status = raw_response.status();
+        eprintln!("=== DEBUG GET ROOT FOLDER ===");
+        eprintln!("Status: {}", status);
+
+        let body_text = raw_response.text().await.map_err(crate::error::AppleMusicError::Http)?;
+        eprintln!("Body:\n{}", body_text);
+        eprintln!("=============================\n");
+
+        // Now parse the response
+        let response: RootLibraryFolderResponse = serde_json::from_str(&body_text)
+            .map_err(|e| AppleMusicError::Api {
+                status: status.as_u16(),
+                message: format!("Failed to parse response: {}. Body: {}", e, body_text),
+            })?;
+
         response
             .meta
             .filters
