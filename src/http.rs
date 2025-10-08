@@ -127,7 +127,7 @@ impl HttpClient {
         for (key, value) in copy.headers() {
             println!("  {}: {:?}", key, value);
         }
-        println!("Body: {:?}", copy.body());
+        println!("Body: {:?}", copy.body().unwrap());
         println!("=====================\n");
         request
     }
