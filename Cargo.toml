@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # HTTP client with rusttls
-reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json","gzip", "brotli", "deflate"] }
 tokio = { version = "1.0", features = ["full"] }
 
 # Serialization
