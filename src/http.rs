@@ -57,14 +57,7 @@ impl HttpClient {
             .send()
             .await
             .map_err(AppleMusicError::Http)?;
-        println!("Response Status: {}", response.status());
-        println!("Response Headers: {:#?}", response.headers());
-        println!(
-            "Response Text: {}",
-            response.text().await.unwrap_or_default()
-        );
-        println!("======================\n");
-        let response = request.send().await.map_err(AppleMusicError::Http)?;
+
         self.handle_response(response).await
     }
 
