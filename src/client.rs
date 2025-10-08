@@ -677,7 +677,7 @@ impl AppleMusicClient {
             .query_param("filter[identity]", "playlistsroot")
             .get_json()
             .await?;
-
+        print!("Response: {:?}", response);
         response
             .meta
             .filters
@@ -726,10 +726,7 @@ impl AppleMusicClient {
         crate::utils::validate_resource_id(folder_id)?;
 
         let path = format!("v1/me/library/playlist-folders/{}", folder_id);
-        let response: LibraryPlaylistFoldersResponse = self
-            .http_client
-            .get_json(&path)
-            .await?;
+        let response: LibraryPlaylistFoldersResponse = self.http_client.get_json(&path).await?;
 
         response
             .data
@@ -792,12 +789,17 @@ impl AppleMusicClient {
         let folders = self.get_library_folders().await?;
 
         // Check if a folder with this name already exists
-        if let Some(existing_folder) = folders.data.into_iter().find(|f| f.attributes.name == folder_name) {
+        if let Some(existing_folder) = folders
+            .data
+            .into_iter()
+            .find(|f| f.attributes.name == folder_name)
+        {
             return Ok(existing_folder);
         }
 
         // Folder doesn't exist, create it in the specified parent folder
-        self.create_library_folder(folder_name, parent_folder_id).await
+        self.create_library_folder(folder_name, parent_folder_id)
+            .await
     }
 
     /// Add tracks to a library playlist
