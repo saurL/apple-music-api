@@ -671,7 +671,7 @@ impl AppleMusicClient {
     pub async fn get_root_library_folder(&self) -> Result<LibraryPlaylistFolder> {
         self.check_user_token()?;
 
-        let response: LibraryPlaylistFoldersResponse = self
+        let response: RootLibraryFolderResponse = self
             .http_client
             .request("v1/me/library/playlist-folders")
             .query_param("filter[identity]", "playlistsroot")
@@ -679,12 +679,15 @@ impl AppleMusicClient {
             .await?;
 
         response
-            .data
+            .meta
+            .filters
+            .identity
+            .playlistsroot
             .into_iter()
             .next()
             .ok_or_else(|| AppleMusicError::Api {
                 status: 500,
-                message: "Root folder not found".to_string(),
+                message: "Root folder not found in response".to_string(),
             })
     }
 

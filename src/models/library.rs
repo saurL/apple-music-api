@@ -358,6 +358,42 @@ pub struct LibraryPlaylistFoldersResponse {
     pub meta: Option<PaginationMeta>,
 }
 
+/// Response for root library playlist folder
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RootLibraryFolderResponse {
+    /// The response data (usually empty for root folder request)
+    #[serde(rename = "data")]
+    pub data: Vec<LibraryPlaylistFolder>,
+
+    /// Meta information containing the root folder
+    #[serde(rename = "meta")]
+    pub meta: RootFolderMeta,
+}
+
+/// Meta information for root folder response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RootFolderMeta {
+    /// Filters containing the root folder
+    #[serde(rename = "filters")]
+    pub filters: RootFolderFilters,
+}
+
+/// Filters for root folder
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RootFolderFilters {
+    /// Identity filter
+    #[serde(rename = "identity")]
+    pub identity: RootFolderIdentity,
+}
+
+/// Identity containing the root folder
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RootFolderIdentity {
+    /// The playlists root folder
+    #[serde(rename = "playlistsroot")]
+    pub playlistsroot: Vec<LibraryPlaylistFolder>,
+}
+
 /// Library music video resource
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LibraryMusicVideo {
