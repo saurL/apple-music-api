@@ -677,7 +677,7 @@ impl AppleMusicClient {
             .query_param("filter[identity]", "playlistsroot")
             .get_json()
             .await?;
-        print!("Response: {:?}", response);
+        println!("Response: {:?}", response);
         response
             .meta
             .filters
