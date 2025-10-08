@@ -49,7 +49,7 @@ impl HttpClient {
 
         // DEBUG: Serialize and print the request body
         let body_json = serde_json::to_string_pretty(body).unwrap_or_default();
-        eprintln!("=== DEBUG POST REQUEST ===");
+        eprintln!("=== DEBUG POST REQUEST in===");
         eprintln!("URL: {}", url);
         eprintln!("Body:\n{}", body_json);
         eprintln!(
@@ -68,6 +68,15 @@ impl HttpClient {
 
         let mut request = self.client.post(&url).json(body);
 
+        let copy = request.try_clone().unwrap().build().unwrap();
+        println!("=== DEBUG REQUEST 2 ===");
+        println!("URL: {}", copy.url());
+        println!("Headers:");
+        for (key, value) in copy.headers() {
+            println!("  {}: {:?}", key, value);
+        }
+        println!("Body: {:?}", copy.body().unwrap());
+        println!("=====================\n");
         // Add authentication headers
         request = self.add_auth_headers(request);
 
@@ -121,7 +130,7 @@ impl HttpClient {
             request = request.header("Music-User-Token", user_token);
         }
         let copy = request.try_clone().unwrap().build().unwrap();
-        println!("=== DEBUG REQUEST ===");
+        println!("=== DEBUG REQUEST 3 ===");
         println!("URL: {}", copy.url());
         println!("Headers:");
         for (key, value) in copy.headers() {
@@ -173,13 +182,6 @@ impl HttpClient {
         path: &str,
         body: &T,
     ) -> Result<U> {
-        println!("=== DEBUG POST_JSON ===");
-        println!("Path: {}", path);
-        match serde_json::to_string_pretty(body) {
-            Ok(json) => println!("Body:\n{}", json),
-            Err(_) => println!("Body: <failed to serialize>"),
-        }
-        println!("======================\n");
         let response = self.post(path, body).await?;
         response.json().await.map_err(AppleMusicError::Http)
     }
