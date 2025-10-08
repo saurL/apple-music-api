@@ -167,7 +167,10 @@ impl HttpClient {
     ) -> Result<U> {
         println!("=== DEBUG POST_JSON ===");
         println!("Path: {}", path);
-        println!("Body: {:#?}", body);
+        match serde_json::to_string_pretty(body) {
+            Ok(json) => println!("Body:\n{}", json),
+            Err(_) => println!("Body: <failed to serialize>"),
+        }
         println!("======================\n");
         let response = self.post(path, body).await?;
         response.json().await.map_err(AppleMusicError::Http)
