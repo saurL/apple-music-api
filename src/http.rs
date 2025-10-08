@@ -120,7 +120,15 @@ impl HttpClient {
         if let Some(user_token) = &self.user_token {
             request = request.header("Music-User-Token", user_token);
         }
-
+        let copy = request.try_clone().unwrap().build().unwrap();
+        println!("=== DEBUG REQUEST ===");
+        println!("URL: {}", copy.url());
+        println!("Headers:");
+        for (key, value) in copy.headers() {
+            println!("  {}: {:?}", key, value);
+        }
+        println!("Body: {:?}", copy.body());
+        println!("=====================\n");
         request
     }
 
