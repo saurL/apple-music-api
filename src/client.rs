@@ -694,17 +694,38 @@ impl AppleMusicClient {
                 message: format!("Failed to parse response: {}. Body: {}", e, body_text),
             })?;
 
-        response
-            .meta
-            .filters
-            .identity
-            .playlistsroot
-            .into_iter()
-            .next()
-            .ok_or_else(|| AppleMusicError::Api {
-                status: 500,
-                message: "Root folder not found in response".to_string(),
-            })
+        // Check if root folder is in the filtered response
+        if let Some(root_folder) = response.meta.filters.identity.playlistsroot.into_iter().next() {
+            return Ok(root_folder);
+        }
+
+        // If filter didn't return root folder, try getting by ID directly
+        eprintln!("Root folder not found with filter, trying direct access...");
+
+        // Try to get the root folder by its known ID
+        match self.get_library_folder_by_id("p.playlistsroot").await {
+            Ok(folder) => Ok(folder),
+            Err(_) => {
+                // If that fails too, get all folders and look for root
+                eprintln!("Direct access failed, listing all folders...");
+                let all_folders = self.get_library_folders().await?;
+
+                eprintln!("Found {} folders total:", all_folders.data.len());
+                for folder in &all_folders.data {
+                    eprintln!("  - {} (ID: {})", folder.attributes.name, folder.id);
+                }
+
+                // Look for folder with ID containing "root"
+                all_folders
+                    .data
+                    .into_iter()
+                    .find(|f| f.id.to_lowercase().contains("root"))
+                    .ok_or_else(|| AppleMusicError::Api {
+                        status: 404,
+                        message: "Root folder not found. The library may not have been initialized yet.".to_string(),
+                    })
+            }
+        }
     }
 
     /// Get a library playlist folder by ID
