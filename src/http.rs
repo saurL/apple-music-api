@@ -47,40 +47,18 @@ impl HttpClient {
     pub async fn post<T: serde::Serialize>(&self, path: &str, body: &T) -> Result<Response> {
         let url = self.build_url(path)?;
 
-        // DEBUG: Serialize and print the request body
-        let body_json = serde_json::to_string_pretty(body).unwrap_or_default();
-        eprintln!("=== DEBUG POST REQUEST in===");
-        eprintln!("URL: {}", url);
-        eprintln!("Body:\n{}", body_json);
-        eprintln!(
-            "Developer Token: {}...",
-            &self.developer_token.chars().take(20).collect::<String>()
-        );
-        if let Some(user_token) = &self.user_token {
-            eprintln!(
-                "User Token: {}...",
-                &user_token.chars().take(20).collect::<String>()
-            );
-        } else {
-            eprintln!("User Token: None");
-        }
-        eprintln!("=========================\n");
-
         let mut request = self.client.post(&url).json(body);
 
-        let copy = request.try_clone().unwrap().build().unwrap();
-        println!("=== DEBUG REQUEST 2 ===");
-        println!("URL: {}", copy.url());
-        println!("Headers:");
-        for (key, value) in copy.headers() {
-            println!("  {}: {:?}", key, value);
-        }
-        println!("Body: {:?}", copy.body().unwrap());
-        println!("=====================\n");
-        // Add authentication headers
         request = self.add_auth_headers(request);
 
         let response = request.send().await.map_err(AppleMusicError::Http)?;
+        println!("Response Status: {}", response.status());
+        println!("Response Headers: {:#?}", response.headers());
+        println!(
+            "Response Text: {}",
+            response.text().await.unwrap_or_default()
+        );
+        println!("======================\n");
         self.handle_response(response).await
     }
 
@@ -128,15 +106,7 @@ impl HttpClient {
         if let Some(user_token) = &self.user_token {
             request = request.header("Music-User-Token", user_token);
         }
-        let copy = request.try_clone().unwrap().build().unwrap();
-        println!("=== DEBUG REQUEST 3 ===");
-        println!("URL: {}", copy.url());
-        println!("Headers:");
-        for (key, value) in copy.headers() {
-            println!("  {}: {:?}", key, value);
-        }
-        println!("Body: {:?}", copy.body().unwrap());
-        println!("=====================\n");
+
         request
     }
 
