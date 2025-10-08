@@ -122,8 +122,7 @@ impl HttpClient {
     fn add_auth_headers(&self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
         let mut request = request
             .header("Authorization", format!("Bearer {}", self.developer_token))
-            .header("Accept", "application/json")
-            .header("Content-Type", "application/json");
+            .header("Accept", "application/json");
 
         // Add user token if available (for personalized requests)
         if let Some(user_token) = &self.user_token {
