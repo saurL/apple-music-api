@@ -1,8 +1,25 @@
 //! Data models for Apple Music catalog API responses
 
 use super::common::*;
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use chrono::{DateTime, NaiveDate, Utc};
+use serde::{Deserialize, Deserializer, Serialize};
+
+fn parse_date<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    if let Ok(dt) = DateTime::parse_from_rfc3339(&s) {
+        Ok(dt.with_timezone(&Utc))
+    } else if let Ok(d) = NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
+        Ok(DateTime::<Utc>::from_naive_utc_and_offset(
+            d.and_hms_opt(0, 0, 0).unwrap(),
+            Utc,
+        ))
+    } else {
+        Err(serde::de::Error::custom(format!("Invalid date: {}", s)))
+    }
+}
 
 /// Song resource from the catalog
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -92,7 +109,7 @@ pub struct SongAttributes {
     pub previews: Vec<Preview>,
 
     /// The release date
-    #[serde(rename = "releaseDate")]
+    #[serde(rename = "releaseDate", deserialize_with = "parse_date")]
     pub release_date: DateTime<Utc>,
 
     /// The track number
@@ -208,7 +225,7 @@ pub struct AlbumAttributes {
     pub record_label: Option<String>,
 
     /// The release date
-    #[serde(rename = "releaseDate")]
+    #[serde(rename = "releaseDate", deserialize_with = "parse_date")]
     pub release_date: DateTime<Utc>,
 
     /// The track count
@@ -388,7 +405,7 @@ pub struct MusicVideoAttributes {
     pub previews: Vec<Preview>,
 
     /// The release date
-    #[serde(rename = "releaseDate")]
+    #[serde(rename = "releaseDate", deserialize_with = "parse_date")]
     pub release_date: DateTime<Utc>,
 
     /// The track number

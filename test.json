@@ -1,0 +1,45 @@
+{
+  "results": {
+    "songs": {
+      "href": "/v1/catalog/us/search?limit=5&term=Hollow+UNLOGIX&types=songs",
+      "data": [
+        {
+          "id": "1674847288",
+          "type": "songs",
+          "href": "/v1/catalog/us/songs/1674847288",
+          "attributes": {
+            "albumName": "Hollow - Single",
+            "artistName": "UNLOGIX",
+            "artwork": {
+              "bgColor": "d1d2d4",
+              "height": 3000,
+              "textColor1": "070708",
+              "textColor2": "141516",
+              "textColor3": "2f3031",
+              "textColor4": "3a3a3c",
+              "url": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/54/95/93/5495933e-b4e6-8df4-b9f9-d1604f6c109e/6092.jpg/{w}x{h}bb.jpg",
+              "width": 3000
+            },
+            "discNumber": 1,
+            "durationInMillis": 283618,
+            "genreNames": ["Dance", "Music", "Trance"],
+            "hasLyrics": false,
+            "isAppleDigitalMaster": false,
+            "isrc": "FRX452040925",
+            "name": "Hollow",
+            "playParams": { "id": "1674847288", "kind": "song" },
+            "previews": [
+              {
+                "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/09/c4/7a/09c47af0-d3ac-79fe-41eb-e7bb651dd738/mzaf_15998617947319918760.plus.aac.p.m4a"
+              }
+            ],
+            "releaseDate": "2020-03-27",
+            "trackNumber": 1,
+            "url": "https://music.apple.com/us/album/hollow/1674847287?i=1674847288"
+          }
+        }
+      ]
+    }
+  },
+  "meta": { "results": { "order": ["songs"], "rawOrder": ["songs"] } }
+}
