@@ -154,6 +154,14 @@ impl AppleMusicClient {
             .into_iter()
             .map(|(k, v)| (k.to_string(), v))
             .collect();
+        let response1 = self
+            .http_client
+            .request(format!("v1/catalog/{}/search", self.config.storefront))
+            .query_params(query_params.clone())
+            .get()
+            .await?;
+        println!("Response: {:?}", response1);
+        println!("Response text: {:?}", response1.text().await?);
         let response: SearchResponse = self
             .http_client
             .request(format!("v1/catalog/{}/search", self.config.storefront))
