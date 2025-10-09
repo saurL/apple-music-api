@@ -156,7 +156,7 @@ impl AppleMusicClient {
             .collect();
         let response: SearchResponse = self
             .http_client
-            .request("v1/catalog/{storefront}/search")
+            .request(format!("v1/catalog/{}/search", self.config.storefront))
             .query_params(query_params)
             .get_json()
             .await?;
@@ -516,11 +516,13 @@ impl AppleMusicClient {
     pub async fn create_library_playlist(
         &self,
         name: &str,
-        description: Option<&str>,
+        description: Option<impl Into<String>>,
+        songs_ids: Option<Vec<impl Into<String>>>,
+        folder_id: Option<impl Into<String>>,
     ) -> Result<LibraryPlaylist> {
         self.check_user_token()?;
 
-        let request = CreatePlaylistRequest::new(name, description.map(|s| s.to_string()));
+        let request = CreatePlaylistRequest::new(name, description, songs_ids, folder_id);
 
         let response: CreatePlaylistResponse = self
             .http_client

@@ -628,14 +628,32 @@ impl CreatePlaylistRequest {
     ///     Some(false)
     /// );
     /// ```
-    pub fn new(name: impl Into<String>, description: Option<String>) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        description: Option<impl Into<String>>,
+        songs_ids: Option<Vec<impl Into<String>>>,
+        folder_id: Option<impl Into<String>>,
+    ) -> Self {
         Self {
             attributes: CreatePlaylistAttributes {
                 name: name.into(),
-                description,
+                description: description.map(Into::into),
                 is_public: None,
             },
-            relationships: None,
+            relationships: Some(CreatePlaylistRelationships {
+                tracks: CreatePlaylistTracksRelationship {
+                    data: songs_ids
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(TrackReference::new)
+                        .collect(),
+                },
+                parent: CreatePlaylistParentRelationship {
+                    data: folder_id
+                        .map(|id| vec![ParentFolderReference::new(id)])
+                        .unwrap_or_else(Vec::new),
+                },
+            }),
         }
     }
 
